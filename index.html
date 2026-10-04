@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#2e7d32">
+  <title>Wochenplaner</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥕</text></svg>">
+
+  <style>
+    /* ===== Farben (an einer Stelle, damit man sie leicht ändern kann) ===== */
+    :root {
+      --gruen: #2e7d32;
+      --gruen-hell: #e8f5e9;
+      --text: #1f2421;
+      --grau: #6b716d;
+      --rand: #d7dcd8;
+      --hintergrund: #f6f7f5;
+      --karte: #ffffff;
+      --rot: #b3261e;
+    }
+
+    * { box-sizing: border-box; }
+
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 18px;
+      line-height: 1.4;
+      color: var(--text);
+      background: var(--hintergrund);
+    }
+
+    :focus-visible {
+      outline: 3px solid #81c784;
+      outline-offset: 2px;
+    }
+
+    /* ===== Kopfzeile ===== */
+    .kopf {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--gruen);
+      color: #fff;
+      padding: 14px 16px;
+    }
+    .kopf h1 {
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 1.3rem;
+    }
+
+    /* Platz unten lassen, damit die Reiter-Leiste nichts verdeckt */
+    main {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 16px 16px 110px;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      margin: 24px 4px 10px;
+    }
+
+    .einleitung {
+      color: var(--grau);
+      margin: 0 4px 12px;
+    }
+
+    /* ===== Karten und Listen ===== */
+    .karte,
+    .liste-karte {
+      background: var(--karte);
+      border: 1px solid var(--rand);
+      border-radius: 14px;
+    }
+    .karte {
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .karte h2 { margin-top: 0; }
+    .liste-karte {
+      list-style: none;
+      margin: 0 0 16px;
+      padding: 0;
+      overflow: hidden;
+    }
+    .liste-karte > li + li { border-top: 1px solid var(--rand); }
+
+    /* ===== Eingabefelder und Auswahllisten ===== */
+    input[type="text"],
+    select {
+      width: 100%;
+      min-width: 0;
+      min-height: 48px;
+      padding: 10px 12px;
+      font: inherit;
+      color: inherit;
+      background-color: #fff;
+      border: 1px solid var(--rand);
+      border-radius: 10px;
+    }
+    select {
+      appearance: none;
+      -webkit-appearance: none;
+      padding-right: 36px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      /* kleiner Pfeil rechts in der Auswahlliste */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23555' stroke-width='2'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+
+    /* ===== Buttons ===== */
+    .knopf {
+      display: block;
+      width: 100%;
+      min-height: 52px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 600;
+      color: #fff;
+      background: var(--gruen);
+      border: 2px solid var(--gruen);
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .knopf:active { opacity: 0.8; }
+    .knopf-zweitrangig {
+      color: var(--gruen);
+      background: #fff;
+    }
+    .knopf-gefahr {
+      color: var(--rot);
+      background: #fff;
+      border-color: var(--rot);
+    }
+
+    /* ===== Reiter "Woche" ===== */
+    /* Tag oben, Auswahlliste darunter, damit lange Gerichtsnamen Platz haben */
+    .tag {
+      display: grid;
+      gap: 6px;
+      padding: 10px 12px 12px;
+    }
+    .tag label { font-weight: 600; }
+    select.geplant {
+      border-color: var(--gruen);
+      background-color: var(--gruen-hell);
+    }
+
+    /* ===== Reiter "Gerichte" ===== */
+    .feld {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .feld input { margin-top: 6px; font-weight: normal; }
+    .feld-titel {
+      font-weight: 600;
+      margin: 0 0 4px;
+    }
+
+    .zutat-zeile {
+      display: grid;
+      grid-template-columns: 1fr 1fr 48px;
+      gap: 8px;
+      padding: 12px 0;
+      border-top: 1px dashed var(--rand);
+    }
+    .zutat-name { grid-column: 1 / 3; }
+    .zutat-entfernen { grid-column: 3; }
+    .zutat-menge { grid-column: 1; }
+    .zutat-einheit { grid-column: 2 / 4; }
+    .zutat-bereich { grid-column: 1 / -1; }
+
+    .zutat-entfernen {
+      width: 48px;
+      height: 48px;
+      font: inherit;
+      color: var(--grau);
+      background: #fff;
+      border: 1px solid var(--rand);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .formular-hinweis {
+      color: var(--rot);
+      font-weight: 600;
+      margin: 12px 0;
+    }
+    .formular-hinweis:empty { margin: 8px 0; }
+
+    #zutat-hinzufuegen { margin-top: 4px; }
+
+    summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 52px;
+      padding: 12px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      list-style: none;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary::after {
+      content: "▸";
+      margin-left: auto;
+      color: var(--grau);
+      transition: transform 0.15s;
+    }
+    details[open] summary::after { transform: rotate(90deg); }
+
+    .marke {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gruen);
+      background: var(--gruen-hell);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .zutaten {
+      margin: 0;
+      padding: 0 16px 14px 40px;
+      color: var(--grau);
+    }
+    details .knopf-gefahr {
+      width: calc(100% - 32px);
+      margin: 0 16px 16px;
+    }
+
+    /* ===== Reiter "Einkauf" ===== */
+    .fortschritt {
+      color: var(--grau);
+      margin: 16px 4px 0;
+    }
+    .bereich-titel {
+      font-size: 1rem;
+      color: var(--gruen);
+      margin: 20px 4px 8px;
+    }
+    .eintrag {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-height: 52px;
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+    .eintrag input {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      margin: 0;
+      accent-color: var(--gruen);
+    }
+    .eintrag.erledigt span {
+      text-decoration: line-through;
+      color: var(--grau);
+    }
+    .leer {
+      padding: 24px 16px;
+      text-align: center;
+      color: var(--grau);
+    }
+
+    /* ===== Reiter-Leiste unten ===== */
+    .reiter-leiste {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 0 max(0px, calc((100% - 600px) / 2));
+      background: var(--karte);
+      border-top: 1px solid var(--rand);
+    }
+    .reiter-leiste button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      min-height: 64px;
+      font: inherit;
+      font-size: 0.85rem;
+      color: var(--grau);
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .reiter-leiste .symbol {
+      font-size: 1.4rem;
+      line-height: 1;
+    }
+    .reiter-leiste button.aktiv {
+      color: var(--gruen);
+      font-weight: 700;
+      box-shadow: inset 0 3px 0 var(--gruen);
+    }
+
+    /* ===== Kurze Meldung (z. B. "Liste kopiert ✓") ===== */
+    .meldung {
+      position: fixed;
+      left: 16px;
+      right: 16px;
+      bottom: 84px;
+      z-index: 20;
+      width: fit-content;
+      margin: 0 auto;
+      padding: 10px 18px;
+      color: #fff;
+      background: #333;
+      border-radius: 999px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .meldung.sichtbar { opacity: 1; }
+  </style>
+</head>
+<body>
+  <header class="kopf">
+    <h1 id="titel">Wochenplan</h1>
+  </header>
+
+  <main>
+    <!-- Reiter 1: Woche -->
+    <section id="reiter-woche" class="reiter">
+      <p class="einleitung">Wähle für jeden Tag ein Abendessen.</p>
+      <ul id="wochen-liste" class="liste-karte"></ul>
+      <button type="button" id="neue-woche" class="knopf knopf-zweitrangig">Neue Woche</button>
+    </section>
+
+    <!-- Reiter 2: Gerichte -->
+    <section id="reiter-gerichte" class="reiter" hidden>
+      <form id="gericht-formular" class="karte" novalidate>
+        <h2>Neues Gericht</h2>
+        <label class="feld">
+          Name des Gerichts
+          <input type="text" id="gericht-name" autocomplete="off" placeholder="z. B. Kürbissuppe">
+        </label>
+        <p class="feld-titel">Zutaten</p>
+        <div id="zutaten-zeilen"></div>
+        <button type="button" id="zutat-hinzufuegen" class="knopf knopf-zweitrangig">+ Zutat hinzufügen</button>
+        <p id="formular-hinweis" class="formular-hinweis" role="alert"></p>
+        <button type="submit" class="knopf">Gericht speichern</button>
+      </form>
+
+      <h2>Alle Gerichte</h2>
+      <ul id="gerichte-liste" class="liste-karte"></ul>
+    </section>
+
+    <!-- Reiter 3: Einkauf -->
+    <section id="reiter-einkauf" class="reiter" hidden>
+      <button type="button" id="liste-teilen" class="knopf">Liste teilen</button>
+      <div id="einkaufs-liste"></div>
+    </section>
+  </main>
+
+  <div id="meldung" class="meldung" role="status" aria-live="polite"></div>
+
+  <nav class="reiter-leiste">
+    <button type="button" data-reiter="woche"><span class="symbol" aria-hidden="true">📅</span>Woche</button>
+    <button type="button" data-reiter="gerichte"><span class="symbol" aria-hidden="true">🍲</span>Gerichte</button>
+    <button type="button" data-reiter="einkauf"><span class="symbol" aria-hidden="true">🛒</span>Einkauf</button>
+  </nav>
+
+  <script>
+    // ============================================================
+    // 1. FESTE DATEN
+    // ============================================================
+
+    // Die Supermarkt-Bereiche, in der Reihenfolge der Einkaufsliste.
+    const BEREICHE = [
+      "Obst & Gemüse",
+      "Kühlregal",
+      "Brot & Backwaren",
+      "Trockenware & Konserven",
+      "Gewürze & Öle",
+      "Tiefkühl",
+      "Sonstiges",
+    ];
+
+    // Die Einheiten, die man im Formular auswählen kann.
+    const EINHEITEN = ["g", "ml", "Stück", "Zehe", "EL", "TL", "Prise", "Bund", "Dose", "Packung"];
+
+    // Mehrzahl einiger Einheiten, damit es "2 Dosen" statt "2 Dose" heißt.
+    const MEHRZAHL = { Zehe: "Zehen", Prise: "Prisen", Dose: "Dosen", Packung: "Packungen" };
+
+    const TAGE = [
+      { schluessel: "mo", name: "Montag" },
+      { schluessel: "di", name: "Dienstag" },
+      { schluessel: "mi", name: "Mittwoch" },
+      { schluessel: "do", name: "Donnerstag" },
+      { schluessel: "fr", name: "Freitag" },
+      { schluessel: "sa", name: "Samstag" },
+      { schluessel: "so", name: "Sonntag" },
+    ];
+
+    // Unter diesen Namen legt der Browser unsere Daten im localStorage ab.
+    const SPEICHER = {
+      plan: "wochenplaner.plan",
+      gerichte: "wochenplaner.gerichte",
+      haekchen: "wochenplaner.haekchen",
+    };
+
+    // Kurzschreibweise für eine Zutat, damit die Startrezepte übersichtlich bleiben.
+    // z("Zwiebel", 1, "Stück", "Obst & Gemüse") ergibt
+    // { name: "Zwiebel", menge: 1, einheit: "Stück", bereich: "Obst & Gemüse" }
+    function z(name, menge, einheit, bereich) {
+      return { name: name, menge: menge, einheit: einheit, bereich: bereich };
+    }
+
+    // Die 8 Startrezepte. Alle Mengen sind für 1 Person.
+    const STARTREZEPTE = [
+      {
+        id: "s1",
+        name: "Linsen-Dal mit Reis",
+        zutaten: [
+          z("Zwiebel", 1, "Stück", "Obst & Gemüse"),
+          z("Knoblauch", 1, "Zehe", "Obst & Gemüse"),
+          z("Ingwer", 10, "g", "Obst & Gemüse"),
+          z("Rote Linsen", 80, "g", "Trockenware & Konserven"),
+          z("Reis", 75, "g", "Trockenware & Konserven"),
+          z("Kokosmilch", 200, "ml", "Trockenware & Konserven"),
+          z("Gehackte Tomaten", 0.5, "Dose", "Trockenware & Konserven"),
+          z("Currypulver", 1, "TL", "Gewürze & Öle"),
+          z("Rapsöl", 1, "EL", "Gewürze & Öle"),
+        ],
+      },
+      {
+        id: "s2",
+        name: "Kichererbsen-Gemüse-Curry",
+        zutaten: [
+          z("Zwiebel", 1, "Stück", "Obst & Gemüse"),
+          z("Paprika", 1, "Stück", "Obst & Gemüse"),
+          z("Zucchini", 0.5, "Stück", "Obst & Gemüse"),
+          z("Naan-Brot", 1, "Stück", "Brot & Backwaren"),
+          z("Kichererbsen", 0.5, "Dose", "Trockenware & Konserven"),
+          z("Kokosmilch", 200, "ml", "Trockenware & Konserven"),
+          z("Reis", 75, "g", "Trockenware & Konserven"),
+          z("Currypaste", 1, "EL", "Gewürze & Öle"),
+        ],
+      },
+      {
+        id: "s3",
+        name: "Spaghetti mit Tomatensoße",
+        zutaten: [
+          z("Zwiebel", 1, "Stück", "Obst & Gemüse"),
+          z("Knoblauch", 1, "Zehe", "Obst & Gemüse"),
+          z("Parmesan", 20, "g", "Kühlregal"),
+          z("Spaghetti", 125, "g", "Trockenware & Konserven"),
+          z("Passierte Tomaten", 250, "ml", "Trockenware & Konserven"),
+          z("Olivenöl", 1, "EL", "Gewürze & Öle"),
+          z("Oregano", 1, "TL", "Gewürze & Öle"),
+          z("Salz und Pfeffer", null, "", "Gewürze & Öle"),
+        ],
+      },
+      {
+        id: "s4",
+        name: "Ofengemüse mit Feta",
+        zutaten: [
+          z("Kartoffeln", 250, "g", "Obst & Gemüse"),
+          z("Paprika", 1, "Stück", "Obst & Gemüse"),
+          z("Zucchini", 0.5, "Stück", "Obst & Gemüse"),
+          z("Rote Zwiebel", 1, "Stück", "Obst & Gemüse"),
+          z("Feta", 100, "g", "Kühlregal"),
+          z("Olivenöl", 2, "EL", "Gewürze & Öle"),
+          z("Rosmarin", 1, "TL", "Gewürze & Öle"),
+        ],
+      },
+      {
+        id: "s5",
+        name: "Chili sin Carne",
+        zutaten: [
+          z("Zwiebel", 1, "Stück", "Obst & Gemüse"),
+          z("Knoblauch", 1, "Zehe", "Obst & Gemüse"),
+          z("Paprika", 1, "Stück", "Obst & Gemüse"),
+          z("Schmand", 50, "g", "Kühlregal"),
+          z("Tortilla-Wraps", 2, "Stück", "Brot & Backwaren"),
+          z("Kidneybohnen", 0.5, "Dose", "Trockenware & Konserven"),
+          z("Mais", 0.5, "Dose", "Trockenware & Konserven"),
+          z("Gehackte Tomaten", 0.5, "Dose", "Trockenware & Konserven"),
+          z("Chilipulver", 1, "TL", "Gewürze & Öle"),
+          z("Kreuzkümmel", 0.5, "TL", "Gewürze & Öle"),
+        ],
+      },
+      {
+        id: "s6",
+        name: "Gnocchi-Spinat-Pfanne",
+        zutaten: [
+          z("Kirschtomaten", 100, "g", "Obst & Gemüse"),
+          z("Knoblauch", 1, "Zehe", "Obst & Gemüse"),
+          z("Gnocchi", 250, "g", "Kühlregal"),
+          z("Frischkäse", 50, "g", "Kühlregal"),
+          z("Parmesan", 20, "g", "Kühlregal"),
+          z("Olivenöl", 1, "EL", "Gewürze & Öle"),
+          z("Muskatnuss", 1, "Prise", "Gewürze & Öle"),
+          z("Blattspinat", 200, "g", "Tiefkühl"),
+        ],
+      },
+      {
+        id: "s7",
+        name: "Gemüse-Omelett mit Brot",
+        zutaten: [
+          z("Champignons", 100, "g", "Obst & Gemüse"),
+          z("Paprika", 0.5, "Stück", "Obst & Gemüse"),
+          z("Frühlingszwiebeln", 0.5, "Bund", "Obst & Gemüse"),
+          z("Eier", 3, "Stück", "Kühlregal"),
+          z("Geriebener Käse", 30, "g", "Kühlregal"),
+          z("Butter", 1, "EL", "Kühlregal"),
+          z("Brötchen", 2, "Stück", "Brot & Backwaren"),
+          z("Salz und Pfeffer", null, "", "Gewürze & Öle"),
+        ],
+      },
+      {
+        id: "s8",
+        name: "Tofu-Gemüse-Pfanne mit Reis",
+        zutaten: [
+          z("Karotte", 1, "Stück", "Obst & Gemüse"),
+          z("Ingwer", 10, "g", "Obst & Gemüse"),
+          z("Tofu natur", 200, "g", "Kühlregal"),
+          z("Reis", 75, "g", "Trockenware & Konserven"),
+          z("Sojasoße", 2, "EL", "Gewürze & Öle"),
+          z("Sesamöl", 1, "TL", "Gewürze & Öle"),
+          z("Brokkoli", 150, "g", "Tiefkühl"),
+          z("Erdnüsse, geröstet", 20, "g", "Sonstiges"),
+        ],
+      },
+    ];
+
+    // Überschriften in der Kopfzeile, je nach Reiter.
+    const REITER_TITEL = {
+      woche: "Wochenplan",
+      gerichte: "Gerichte",
+      einkauf: "Einkaufsliste",
+    };
+
+
+    // ============================================================
+    // 2. LADEN & SPEICHERN
+    // ============================================================
+
+    // Liest einen Wert aus dem localStorage. Fehlt er oder ist er kaputt,
+    // kommt der Standardwert zurück, damit die App nicht abstürzt.
+    function laden(schluessel, standardwert) {
+      try {
+        const text = localStorage.getItem(schluessel);
+        if (text === null) return standardwert;
+        return JSON.parse(text);
+      } catch (fehler) {
+        return standardwert;
+      }
+    }
+
+    // Schreibt einen Wert in den localStorage.
+    function speichern(schluessel, wert) {
+      try {
+        localStorage.setItem(schluessel, JSON.stringify(wert));
+      } catch (fehler) {
+        // Speichern nicht möglich (z. B. privater Modus). Die App läuft trotzdem weiter.
+      }
+    }
+
+    function ladePlan() {
+      const wert = laden(SPEICHER.plan, {});
+      if (typeof wert !== "object" || wert === null || Array.isArray(wert)) return {};
+      return wert;
+    }
+
+    function ladeEigeneGerichte() {
+      const wert = laden(SPEICHER.gerichte, []);
+      if (!Array.isArray(wert)) return [];
+      // Nur Einträge behalten, die wie ein Gericht aussehen.
+      return wert.filter(function (gericht) {
+        return gericht
+          && typeof gericht.id === "string"
+          && typeof gericht.name === "string"
+          && Array.isArray(gericht.zutaten);
+      });
+    }
+
+    function ladeHaekchen() {
+      const wert = laden(SPEICHER.haekchen, []);
+      // Ein "Set" ist eine Liste ohne doppelte Einträge.
+      return new Set(Array.isArray(wert) ? wert : []);
+    }
+
+    // Der aktuelle Zustand der App:
+    let plan = ladePlan();                       // welches Gericht an welchem Tag
+    let eigeneGerichte = ladeEigeneGerichte();   // selbst angelegte Gerichte
+    let haekchen = ladeHaekchen();               // abgehakte Einkaufs-Einträge
+
+
+    // ============================================================
+    // 3. EINKAUFSLISTE BERECHNEN
+    // ============================================================
+
+    // Alle Gerichte (Startrezepte + eigene), alphabetisch sortiert.
+    function alleGerichte() {
+      return STARTREZEPTE.concat(eigeneGerichte).sort(function (a, b) {
+        return a.name.localeCompare(b.name, "de");
+      });
+    }
+
+    function findeGericht(id) {
+      return alleGerichte().find(function (gericht) {
+        return gericht.id === id;
+      });
+    }
+
+    // Sucht eine Zutat in allen Gerichten und gibt ihren Bereich zurück,
+    // z. B. "zwiebel" -> "Obst & Gemüse". Unbekannte Zutaten ergeben "".
+    function bekannterBereich(zutatName) {
+      const gesucht = zutatName.trim().toLowerCase();
+      for (const gericht of alleGerichte()) {
+        for (const zutat of gericht.zutaten) {
+          if (String(zutat.name).toLowerCase() === gesucht && BEREICHE.includes(zutat.bereich)) {
+            return zutat.bereich;
+          }
+        }
+      }
+      return "";
+    }
+
+    function istEigenesGericht(gericht) {
+      return eigeneGerichte.some(function (eigenes) {
+        return eigenes.id === gericht.id;
+      });
+    }
+
+    // Erkennungszeichen für einen Einkaufs-Eintrag, z. B. "obst & gemüse|zwiebel|stück".
+    // Zutaten mit gleichem Zeichen werden zusammengezählt und teilen sich ein Häkchen.
+    function eintragSchluessel(bereich, name, einheit) {
+      return (bereich + "|" + name + "|" + einheit).toLowerCase();
+    }
+
+    // Sammelt die Zutaten aller geplanten Gerichte und gruppiert sie nach Bereich.
+    // Ergebnis: [ { bereich: "Obst & Gemüse", eintraege: [ ... ] }, ... ]
+    function berechneEinkaufsliste() {
+      const eintraege = new Map();
+
+      for (const tag of TAGE) {
+        const gericht = findeGericht(plan[tag.schluessel]);
+        if (!gericht) continue;
+
+        for (const zutat of gericht.zutaten) {
+          const name = String(zutat.name).trim();
+          const einheit = zutat.einheit || "";
+          // Unbekannte Bereiche landen unter "Sonstiges".
+          const bereich = BEREICHE.includes(zutat.bereich) ? zutat.bereich : "Sonstiges";
+          const schluessel = eintragSchluessel(bereich, name, einheit);
+
+          let eintrag = eintraege.get(schluessel);
+          if (!eintrag) {
+            eintrag = { schluessel: schluessel, name: name, menge: null, einheit: einheit, bereich: bereich };
+            eintraege.set(schluessel, eintrag);
+          }
+          if (typeof zutat.menge === "number") {
+            eintrag.menge = (eintrag.menge || 0) + zutat.menge;
+          }
+        }
+      }
+
+      const gruppen = [];
+      for (const bereich of BEREICHE) {
+        const imBereich = Array.from(eintraege.values())
+          .filter(function (eintrag) { return eintrag.bereich === bereich; })
+          .sort(function (a, b) { return a.name.localeCompare(b.name, "de"); });
+        if (imBereich.length > 0) {
+          gruppen.push({ bereich: bereich, eintraege: imBereich });
+        }
+      }
+      return gruppen;
+    }
+
+    // 0.5 -> "0,5", 1000 -> "1.000"
+    function formatiereMenge(menge) {
+      if (typeof menge !== "number") return "";
+      return menge.toLocaleString("de-DE", { maximumFractionDigits: 2 });
+    }
+
+    // { menge: 2, einheit: "Dose", name: "Mais" } -> "2 Dosen Mais"
+    function formatiereZutat(zutat) {
+      let einheit = zutat.einheit;
+      if (typeof zutat.menge !== "number") {
+        einheit = ""; // ohne Menge auch keine Einheit, also "Feta" statt "Stück Feta"
+      } else if (zutat.menge !== 1 && MEHRZAHL[einheit]) {
+        einheit = MEHRZAHL[einheit];
+      }
+      return [formatiereMenge(zutat.menge), einheit, zutat.name]
+        .filter(function (teil) { return teil; })
+        .join(" ");
+    }
+
+    // Text zum Teilen: nur die Einträge, die noch nicht abgehakt sind.
+    function erzeugeTeilenText() {
+      const zeilen = [];
+      for (const gruppe of berechneEinkaufsliste()) {
+        const offen = gruppe.eintraege.filter(function (eintrag) {
+          return !haekchen.has(eintrag.schluessel);
+        });
+        if (offen.length === 0) continue;
+        zeilen.push("", gruppe.bereich);
+        for (const eintrag of offen) {
+          zeilen.push("- " + formatiereZutat(eintrag));
+        }
+      }
+      if (zeilen.length === 0) return "";
+      return "Einkaufsliste\n" + zeilen.join("\n");
+    }
+
+
+    // ============================================================
+    // 4. ANZEIGEN
+    // ============================================================
+
+    function neueOption(wert, text) {
+      const option = document.createElement("option");
+      option.value = wert;
+      option.textContent = text;
+      return option;
+    }
+
+    function zeigeReiter(name) {
+      for (const abschnitt of document.querySelectorAll(".reiter")) {
+        abschnitt.hidden = abschnitt.id !== "reiter-" + name;
+      }
+      for (const knopf of document.querySelectorAll(".reiter-leiste button")) {
+        const aktiv = knopf.dataset.reiter === name;
+        knopf.classList.toggle("aktiv", aktiv);
+        if (aktiv) {
+          knopf.setAttribute("aria-current", "page");
+        } else {
+          knopf.removeAttribute("aria-current");
+        }
+      }
+      document.getElementById("titel").textContent = REITER_TITEL[name];
+      window.scrollTo(0, 0);
+    }
+
+    function zeigeWoche() {
+      const liste = document.getElementById("wochen-liste");
+      liste.replaceChildren(); // alten Inhalt entfernen
+      const gerichte = alleGerichte();
+
+      for (const tag of TAGE) {
+        const zeile = document.createElement("li");
+        zeile.className = "tag";
+
+        const beschriftung = document.createElement("label");
+        beschriftung.htmlFor = "tag-" + tag.schluessel;
+        beschriftung.textContent = tag.name;
+
+        const auswahl = document.createElement("select");
+        auswahl.id = "tag-" + tag.schluessel;
+        auswahl.dataset.tag = tag.schluessel;
+        auswahl.append(neueOption("", "– nichts geplant –"));
+        for (const gericht of gerichte) {
+          auswahl.append(neueOption(gericht.id, gericht.name));
+        }
+        // Nur setzen, wenn es das Gericht noch gibt.
+        auswahl.value = findeGericht(plan[tag.schluessel]) ? plan[tag.schluessel] : "";
+        auswahl.classList.toggle("geplant", auswahl.value !== "");
+
+        zeile.append(beschriftung, auswahl);
+        liste.append(zeile);
+      }
+    }
+
+    function zeigeGerichte() {
+      const liste = document.getElementById("gerichte-liste");
+      liste.replaceChildren();
+
+      for (const gericht of alleGerichte()) {
+        const eintrag = document.createElement("li");
+        const details = document.createElement("details");
+
+        const titel = document.createElement("summary");
+        titel.textContent = gericht.name;
+        const eigenes = istEigenesGericht(gericht);
+        if (eigenes) {
+          const marke = document.createElement("span");
+          marke.className = "marke";
+          marke.textContent = "eigenes";
+          titel.append(marke);
+        }
+
+        const zutatenListe = document.createElement("ul");
+        zutatenListe.className = "zutaten";
+        for (const zutat of gericht.zutaten) {
+          const punkt = document.createElement("li");
+          punkt.textContent = formatiereZutat(zutat);
+          zutatenListe.append(punkt);
+        }
+
+        details.append(titel, zutatenListe);
+
+        if (eigenes) {
+          const loeschen = document.createElement("button");
+          loeschen.type = "button";
+          loeschen.className = "knopf knopf-gefahr";
+          loeschen.textContent = "Gericht löschen";
+          loeschen.dataset.loeschen = gericht.id;
+          details.append(loeschen);
+        }
+
+        eintrag.append(details);
+        liste.append(eintrag);
+      }
+    }
+
+    function zeigeEinkaufsliste() {
+      const bereich = document.getElementById("einkaufs-liste");
+      const teilenKnopf = document.getElementById("liste-teilen");
+      bereich.replaceChildren();
+
+      const gruppen = berechneEinkaufsliste();
+
+      if (gruppen.length === 0) {
+        const hinweis = document.createElement("p");
+        hinweis.className = "leer karte";
+        hinweis.textContent = "Plane zuerst ein paar Abendessen im Reiter „Woche“.";
+        bereich.append(hinweis);
+        teilenKnopf.hidden = true;
+        return;
+      }
+      teilenKnopf.hidden = false;
+
+      let anzahl = 0;
+      let erledigt = 0;
+
+      for (const gruppe of gruppen) {
+        const ueberschrift = document.createElement("h2");
+        ueberschrift.className = "bereich-titel";
+        ueberschrift.textContent = gruppe.bereich;
+
+        const liste = document.createElement("ul");
+        liste.className = "liste-karte";
+
+        for (const eintrag of gruppe.eintraege) {
+          const istErledigt = haekchen.has(eintrag.schluessel);
+          anzahl++;
+          if (istErledigt) erledigt++;
+
+          const punkt = document.createElement("li");
+          const beschriftung = document.createElement("label");
+          beschriftung.className = istErledigt ? "eintrag erledigt" : "eintrag";
+
+          const kaestchen = document.createElement("input");
+          kaestchen.type = "checkbox";
+          kaestchen.checked = istErledigt;
+          kaestchen.dataset.schluessel = eintrag.schluessel;
+
+          const text = document.createElement("span");
+          text.textContent = formatiereZutat(eintrag);
+
+          beschriftung.append(kaestchen, text);
+          punkt.append(beschriftung);
+          liste.append(punkt);
+        }
+
+        bereich.append(ueberschrift, liste);
+      }
+
+      const fortschritt = document.createElement("p");
+      fortschritt.className = "fortschritt";
+      fortschritt.textContent = erledigt + " von " + anzahl + " erledigt";
+      bereich.prepend(fortschritt);
+    }
+
+    // Leere Zeile für eine Zutat im Formular "Neues Gericht".
+    function neueZutatenZeile() {
+      const zeile = document.createElement("div");
+      zeile.className = "zutat-zeile";
+
+      const name = document.createElement("input");
+      name.type = "text";
+      name.className = "zutat-name";
+      name.placeholder = "Zutat, z. B. Zwiebel";
+      name.setAttribute("aria-label", "Zutat");
+
+      const entfernen = document.createElement("button");
+      entfernen.type = "button";
+      entfernen.className = "zutat-entfernen";
+      entfernen.textContent = "✕";
+      entfernen.setAttribute("aria-label", "Zutat entfernen");
+
+      const menge = document.createElement("input");
+      menge.type = "text";
+      menge.inputMode = "decimal"; // Zahlen-Tastatur am Handy
+      menge.className = "zutat-menge";
+      menge.placeholder = "Menge";
+      menge.setAttribute("aria-label", "Menge");
+
+      const einheit = document.createElement("select");
+      einheit.className = "zutat-einheit";
+      einheit.setAttribute("aria-label", "Einheit");
+      einheit.append(neueOption("", "– keine Einheit –"));
+      for (const e of EINHEITEN) einheit.append(neueOption(e, e));
+      einheit.value = "Stück";
+
+      const bereich = document.createElement("select");
+      bereich.className = "zutat-bereich";
+      bereich.setAttribute("aria-label", "Supermarkt-Bereich");
+      // Kein Bereich vorausgewählt: Er wird automatisch gesetzt (bekannte Zutat) oder selbst gewählt.
+      bereich.append(neueOption("", "Bereich wählen …"));
+      for (const b of BEREICHE) bereich.append(neueOption(b, b));
+      bereich.value = "";
+
+      zeile.append(name, entfernen, menge, einheit, bereich);
+      document.getElementById("zutaten-zeilen").append(zeile);
+      return zeile;
+    }
+
+    function formularLeeren() {
+      document.getElementById("gericht-name").value = "";
+      document.getElementById("zutaten-zeilen").replaceChildren();
+      document.getElementById("formular-hinweis").textContent = "";
+      neueZutatenZeile();
+    }
+
+    function zeigeFormularFehler(text) {
+      document.getElementById("formular-hinweis").textContent = text;
+    }
+
+    // Kurze Meldung unten am Bildschirm, verschwindet nach 2,5 Sekunden.
+    let meldungZeitgeber;
+    function zeigeMeldung(text) {
+      const meldung = document.getElementById("meldung");
+      meldung.textContent = text;
+      meldung.classList.add("sichtbar");
+      clearTimeout(meldungZeitgeber);
+      meldungZeitgeber = setTimeout(function () {
+        meldung.classList.remove("sichtbar");
+      }, 2500);
+    }
+
+
+    // ============================================================
+    // 5. KLICKS UND EINGABEN VERARBEITEN
+    // ============================================================
+
+    // Reiter-Leiste unten
+    for (const knopf of document.querySelectorAll(".reiter-leiste button")) {
+      knopf.addEventListener("click", function () {
+        zeigeReiter(knopf.dataset.reiter);
+      });
+    }
+
+    // Gericht für einen Tag gewählt
+    document.getElementById("wochen-liste").addEventListener("change", function (ereignis) {
+      const auswahl = ereignis.target;
+      plan[auswahl.dataset.tag] = auswahl.value || null;
+      speichern(SPEICHER.plan, plan);
+      auswahl.classList.toggle("geplant", auswahl.value !== "");
+      zeigeEinkaufsliste();
+    });
+
+    // Button "Neue Woche"
+    document.getElementById("neue-woche").addEventListener("click", function () {
+      if (!confirm("Plan und Häkchen wirklich leeren? Deine eigenen Gerichte bleiben erhalten.")) return;
+      plan = {};
+      haekchen = new Set();
+      speichern(SPEICHER.plan, plan);
+      speichern(SPEICHER.haekchen, []);
+      zeigeWoche();
+      zeigeEinkaufsliste();
+      zeigeMeldung("Neue Woche gestartet ✓");
+    });
+
+    // Button "+ Zutat hinzufügen"
+    document.getElementById("zutat-hinzufuegen").addEventListener("click", function () {
+      const zeile = neueZutatenZeile();
+      zeile.querySelector(".zutat-name").focus();
+    });
+
+    // ✕ bei einer Zutat
+    document.getElementById("zutaten-zeilen").addEventListener("click", function (ereignis) {
+      const knopf = ereignis.target.closest(".zutat-entfernen");
+      if (!knopf) return;
+      knopf.closest(".zutat-zeile").remove();
+      // Es soll immer mindestens eine Zeile da sein.
+      if (document.querySelectorAll(".zutat-zeile").length === 0) {
+        neueZutatenZeile();
+      }
+    });
+
+    // Zutat eingetippt: Ist sie bekannt, den Bereich automatisch einstellen.
+    // Ein selbst gewählter Bereich wird dabei nicht überschrieben.
+    document.getElementById("zutaten-zeilen").addEventListener("input", function (ereignis) {
+      const feld = ereignis.target;
+      if (!feld.classList.contains("zutat-name")) return;
+      const auswahl = feld.closest(".zutat-zeile").querySelector(".zutat-bereich");
+      if (auswahl.value !== "" && auswahl.dataset.automatisch !== "ja") return;
+      const bereich = bekannterBereich(feld.value);
+      auswahl.value = bereich;
+      auswahl.dataset.automatisch = bereich ? "ja" : "";
+    });
+
+    // Bereich von Hand gewählt: ab jetzt nicht mehr automatisch ändern.
+    document.getElementById("zutaten-zeilen").addEventListener("change", function (ereignis) {
+      if (ereignis.target.classList.contains("zutat-bereich")) {
+        ereignis.target.dataset.automatisch = "";
+      }
+    });
+
+    // Formular "Neues Gericht" abschicken
+    document.getElementById("gericht-formular").addEventListener("submit", function (ereignis) {
+      ereignis.preventDefault(); // verhindert, dass die Seite neu lädt
+
+      const name = document.getElementById("gericht-name").value.trim();
+      if (name === "") {
+        zeigeFormularFehler("Bitte gib dem Gericht einen Namen.");
+        return;
+      }
+      const gibtEsSchon = alleGerichte().some(function (gericht) {
+        return gericht.name.toLowerCase() === name.toLowerCase();
+      });
+      if (gibtEsSchon) {
+        zeigeFormularFehler("Ein Gericht mit diesem Namen gibt es schon.");
+        return;
+      }
+
+      const zutaten = [];
+      for (const zeile of document.querySelectorAll(".zutat-zeile")) {
+        const zutatName = zeile.querySelector(".zutat-name").value.trim();
+        const mengeText = zeile.querySelector(".zutat-menge").value.trim();
+        if (zutatName === "") continue; // leere Zeilen überspringen
+
+        let menge = null;
+        if (mengeText !== "") {
+          menge = Number(mengeText.replace(",", ".")); // "0,5" -> 0.5
+          if (!(menge > 0)) {
+            zeigeFormularFehler("Bei „" + zutatName + "“ ist die Menge keine gültige Zahl. Beispiel: 0,5");
+            return;
+          }
+        }
+
+        const bereich = zeile.querySelector(".zutat-bereich").value;
+        if (bereich === "") {
+          zeigeFormularFehler("Bitte wähle bei „" + zutatName + "“ einen Supermarkt-Bereich.");
+          return;
+        }
+
+        zutaten.push({
+          name: zutatName,
+          menge: menge,
+          einheit: zeile.querySelector(".zutat-einheit").value,
+          bereich: bereich,
+        });
+      }
+
+      if (zutaten.length === 0) {
+        zeigeFormularFehler("Bitte trage mindestens eine Zutat ein.");
+        return;
+      }
+
+      // Daten ändern → speichern → neu malen
+      eigeneGerichte.push({ id: "e" + Date.now(), name: name, zutaten: zutaten });
+      speichern(SPEICHER.gerichte, eigeneGerichte);
+      formularLeeren();
+      zeigeWoche();
+      zeigeGerichte();
+      zeigeEinkaufsliste();
+      zeigeMeldung("„" + name + "“ gespeichert ✓");
+    });
+
+    // Button "Gericht löschen"
+    document.getElementById("gerichte-liste").addEventListener("click", function (ereignis) {
+      const knopf = ereignis.target.closest("[data-loeschen]");
+      if (!knopf) return;
+
+      const id = knopf.dataset.loeschen;
+      const gericht = findeGericht(id);
+      if (!gericht || !confirm("„" + gericht.name + "“ wirklich löschen?")) return;
+
+      eigeneGerichte = eigeneGerichte.filter(function (eigenes) {
+        return eigenes.id !== id;
+      });
+      // Gelöschtes Gericht auch aus der Woche entfernen.
+      for (const tag of TAGE) {
+        if (plan[tag.schluessel] === id) plan[tag.schluessel] = null;
+      }
+      speichern(SPEICHER.gerichte, eigeneGerichte);
+      speichern(SPEICHER.plan, plan);
+      zeigeWoche();
+      zeigeGerichte();
+      zeigeEinkaufsliste();
+      zeigeMeldung("Gericht gelöscht");
+    });
+
+    // Häkchen in der Einkaufsliste
+    document.getElementById("einkaufs-liste").addEventListener("change", function (ereignis) {
+      const kaestchen = ereignis.target;
+      if (kaestchen.checked) {
+        haekchen.add(kaestchen.dataset.schluessel);
+      } else {
+        haekchen.delete(kaestchen.dataset.schluessel);
+      }
+      speichern(SPEICHER.haekchen, Array.from(haekchen));
+      zeigeEinkaufsliste();
+    });
+
+    // Button "Liste teilen"
+    document.getElementById("liste-teilen").addEventListener("click", async function () {
+      const text = erzeugeTeilenText();
+      if (text === "") {
+        zeigeMeldung("Alles abgehakt – nichts zu teilen.");
+        return;
+      }
+
+      // Am Handy (Touchscreen) das Teilen-Menü öffnen, sonst kopieren.
+      const istHandy = window.matchMedia("(pointer: coarse)").matches;
+      if (istHandy && navigator.share) {
+        try {
+          await navigator.share({ title: "Einkaufsliste", text: text });
+          return;
+        } catch (fehler) {
+          if (fehler.name === "AbortError") return; // Teilen-Menü wurde geschlossen
+          // Andere Fehler: unten stattdessen kopieren
+        }
+      }
+
+      if (await inZwischenablageKopieren(text)) {
+        zeigeMeldung("Liste kopiert ✓");
+      } else {
+        zeigeMeldung("Kopieren hat leider nicht geklappt.");
+      }
+    });
+
+    async function inZwischenablageKopieren(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (fehler) {
+        // Ersatzweg für Browser, die das obere nicht können
+        const feld = document.createElement("textarea");
+        feld.value = text;
+        feld.setAttribute("readonly", "");
+        feld.style.position = "fixed";
+        feld.style.opacity = "0";
+        document.body.append(feld);
+        feld.select();
+        let geklappt = false;
+        try {
+          geklappt = document.execCommand("copy");
+        } catch (fehler2) {
+          geklappt = false;
+        }
+        feld.remove();
+        return geklappt;
+      }
+    }
+
+
+    // ============================================================
+    // 6. START
+    // ============================================================
+
+    neueZutatenZeile();
+    zeigeWoche();
+    zeigeGerichte();
+    zeigeEinkaufsliste();
+    zeigeReiter("woche");
+  </script>
+</body>
+</html>
