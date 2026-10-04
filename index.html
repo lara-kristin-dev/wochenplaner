@@ -3,175 +3,299 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#2e7d32">
+  <meta name="theme-color" content="#FAF6EF">
   <title>Wochenplaner</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥕</text></svg>">
 
   <style>
-    /* ===== Farben (an einer Stelle, damit man sie leicht ändern kann) ===== */
+    /* ===== Farben, Formen, Schriften (siehe Abschnitt "Design" in der CLAUDE.md) ===== */
     :root {
-      --gruen: #2e7d32;
-      --gruen-hell: #e8f5e9;
-      --text: #1f2421;
-      --grau: #6b716d;
-      --rand: #d7dcd8;
-      --hintergrund: #f6f7f5;
-      --karte: #ffffff;
-      --rot: #b3261e;
+      --hintergrund: #FAF6EF;        /* warmes Creme */
+      --karte: #FFFDF9;              /* fast Weiß */
+      --terrakotta: #C2603F;         /* Hauptfarbe: Buttons, aktiver Reiter, Häkchen */
+      --terrakotta-dunkel: #A84F32;  /* Terrakotta beim Drüberfahren */
+      --terrakotta-hell: #F6E6DE;    /* zarter Terrakotta-Hauch für Flächen */
+      --salbei: #7A8F6E;             /* Überschriften der Supermarkt-Bereiche */
+      --salbei-hell: #EDF0E8;
+      --text: #3B2F2A;               /* dunkles Warmbraun */
+      --gedaempft: #8A7B70;          /* Nebentext */
+      --linie: #EDE4D8;              /* feine Linien und Ränder */
+      --fehler: #A5402A;
+
+      --rundung: 16px;
+      --schatten: 0 1px 2px rgba(59, 47, 42, 0.04), 0 8px 24px rgba(59, 47, 42, 0.06);
+      --schrift-titel: Georgia, "Iowan Old Style", "Palatino Linotype", serif;
+      --schrift-text: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
 
     * { box-sizing: border-box; }
 
     [hidden] { display: none !important; }
 
+    /* Immer helles Design, auch wenn das Handy auf Dunkel steht */
+    html { color-scheme: light; }
+
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-family: var(--schrift-text);
       font-size: 18px;
-      line-height: 1.4;
+      line-height: 1.45;
       color: var(--text);
       background: var(--hintergrund);
+      -webkit-tap-highlight-color: transparent;
     }
 
     :focus-visible {
-      outline: 3px solid #81c784;
+      outline: 3px solid rgba(194, 96, 63, 0.45);
       outline-offset: 2px;
     }
 
-    /* ===== Kopfzeile ===== */
-    .kopf {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      background: var(--gruen);
-      color: #fff;
-      padding: 14px 16px;
+    h1,
+    h2 {
+      font-family: var(--schrift-titel);
+      font-weight: normal;
+      color: var(--text);
     }
-    .kopf h1 {
+
+    h2 {
+      font-size: 1.35rem;
+      margin: 36px 4px 14px;
+    }
+
+    /* ===== Kopfbereich ===== */
+    .kopf {
       max-width: 600px;
       margin: 0 auto;
-      font-size: 1.3rem;
+      padding: 36px 20px 4px;
+    }
+    .kopf h1 {
+      margin: 0;
+      font-size: 2.1rem;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+    }
+    .unterzeile {
+      margin: 8px 0 0;
+      font-family: var(--schrift-titel);
+      font-style: italic;
+      font-size: 1.05rem;
+      color: var(--gedaempft);
+    }
+    /* kleiner Terrakotta-Strich unter dem Titel */
+    .kopf::after {
+      content: "";
+      display: block;
+      width: 40px;
+      height: 3px;
+      margin-top: 16px;
+      border-radius: 2px;
+      background: var(--terrakotta);
     }
 
     /* Platz unten lassen, damit die Reiter-Leiste nichts verdeckt */
     main {
       max-width: 600px;
       margin: 0 auto;
-      padding: 16px 16px 110px;
-    }
-
-    h2 {
-      font-size: 1.1rem;
-      margin: 24px 4px 10px;
+      padding: 16px 16px 124px;
     }
 
     .einleitung {
-      color: var(--grau);
-      margin: 0 4px 12px;
+      margin: 4px 4px 18px;
+      font-size: 0.95rem;
+      color: var(--gedaempft);
     }
 
-    /* ===== Karten und Listen ===== */
-    .karte,
-    .liste-karte {
-      background: var(--karte);
-      border: 1px solid var(--rand);
-      border-radius: 14px;
-    }
+    /* ===== Karten ===== */
     .karte {
-      padding: 16px;
-      margin-bottom: 16px;
+      padding: 22px 20px;
+      margin-bottom: 20px;
+      background: var(--karte);
+      border-radius: var(--rundung);
+      box-shadow: var(--schatten);
     }
     .karte h2 { margin-top: 0; }
-    .liste-karte {
-      list-style: none;
-      margin: 0 0 16px;
-      padding: 0;
-      overflow: hidden;
-    }
-    .liste-karte > li + li { border-top: 1px solid var(--rand); }
 
-    /* ===== Eingabefelder und Auswahllisten ===== */
+    /* ===== Eingabefelder im Formular ===== */
     input[type="text"],
-    select {
+    #gericht-formular select {
       width: 100%;
       min-width: 0;
       min-height: 48px;
-      padding: 10px 12px;
+      padding: 11px 14px;
       font: inherit;
+      font-size: 18px;
       color: inherit;
-      background-color: #fff;
-      border: 1px solid var(--rand);
-      border-radius: 10px;
+      background-color: var(--hintergrund);
+      border: 1px solid var(--linie);
+      border-radius: 12px;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    select {
+    input[type="text"]::placeholder { color: #B5A89D; }
+    input[type="text"]:focus,
+    #gericht-formular select:focus {
+      outline: none;
+      border-color: var(--terrakotta);
+      box-shadow: 0 0 0 3px rgba(194, 96, 63, 0.15);
+    }
+    #gericht-formular select {
       appearance: none;
       -webkit-appearance: none;
-      padding-right: 36px;
+      padding-right: 40px;
       text-overflow: ellipsis;
       white-space: nowrap;
       overflow: hidden;
+      cursor: pointer;
       /* kleiner Pfeil rechts in der Auswahlliste */
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23555' stroke-width='2'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238A7B70' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 12px center;
+      background-position: right 14px center;
     }
 
     /* ===== Buttons ===== */
     .knopf {
       display: block;
       width: 100%;
-      min-height: 52px;
-      padding: 12px 16px;
+      min-height: 54px;
+      padding: 14px 20px;
       font: inherit;
       font-weight: 600;
+      letter-spacing: 0.01em;
       color: #fff;
-      background: var(--gruen);
-      border: 2px solid var(--gruen);
-      border-radius: 12px;
+      background: var(--terrakotta);
+      border: 1.5px solid var(--terrakotta);
+      border-radius: var(--rundung);
+      box-shadow: 0 4px 14px rgba(194, 96, 63, 0.25);
       cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
     }
-    .knopf:active { opacity: 0.8; }
-    .knopf-zweitrangig {
-      color: var(--gruen);
-      background: #fff;
+    .knopf:hover {
+      background: var(--terrakotta-dunkel);
+      border-color: var(--terrakotta-dunkel);
     }
-    .knopf-gefahr {
-      color: var(--rot);
-      background: #fff;
-      border-color: var(--rot);
+    .knopf:active { transform: scale(0.98); }
+    .knopf-zweitrangig,
+    .knopf-zweitrangig:hover {
+      color: var(--terrakotta);
+      border-color: #E8CDBF;
+      box-shadow: none;
     }
+    .knopf-zweitrangig { background: transparent; }
+    .knopf-zweitrangig:hover { background: var(--terrakotta-hell); }
+    .knopf-gefahr,
+    .knopf-gefahr:hover {
+      color: var(--fehler);
+      border-color: #ECD3C8;
+      box-shadow: none;
+    }
+    .knopf-gefahr { background: transparent; }
+    .knopf-gefahr:hover { background: #FBEEE8; }
 
-    /* ===== Reiter "Woche" ===== */
-    /* Tag oben, Auswahlliste darunter, damit lange Gerichtsnamen Platz haben */
-    .tag {
+    /* ===== Reiter "Woche": jeder Tag eine eigene Karte ===== */
+    .tage {
       display: grid;
-      gap: 6px;
-      padding: 10px 12px 12px;
+      gap: 12px;
+      margin: 0 0 28px;
+      padding: 0;
+      list-style: none;
     }
-    .tag label { font-weight: 600; }
-    select.geplant {
-      border-color: var(--gruen);
-      background-color: var(--gruen-hell);
+    .tag {
+      position: relative;
+      background: var(--karte);
+      border: 1.5px solid transparent;
+      border-radius: var(--rundung);
+      box-shadow: var(--schatten);
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    /* Wochentag klein oben in der Karte */
+    .tag label {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--gedaempft);
+      pointer-events: none; /* Tippen geht durch auf die Auswahlliste */
+    }
+    /* Die Auswahlliste füllt die ganze Karte: überall tippen öffnet sie */
+    .tag select {
+      display: block;
+      width: 100%;
+      min-height: 86px;
+      padding: 38px 42px 16px 20px;
+      font-family: var(--schrift-titel);
+      font-size: 1.15rem;
+      color: var(--text);
+      background-color: transparent;
+      border: none;
+      border-radius: var(--rundung);
+      appearance: none;
+      -webkit-appearance: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'%3E%3Cpath d='M1.5 1.5l5.5 5.5 5.5-5.5' fill='none' stroke='%23C2603F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 20px center;
+    }
+    .tag select:focus { outline: none; }
+    .tag:focus-within {
+      box-shadow: var(--schatten), 0 0 0 3px rgba(194, 96, 63, 0.3);
+    }
+    .tag select option {
+      font-family: var(--schrift-text);
+      font-style: normal;
+      font-size: 1rem;
+      color: var(--text);
+    }
+    /* Noch nichts geplant: gedämpfte Schrift, zurückhaltende Karte */
+    .tag select:not(.geplant) {
+      font-size: 1.05rem;
+      font-style: italic;
+      color: var(--gedaempft);
+    }
+    .tag:has(select:not(.geplant)) {
+      background: transparent;
+      border: 1.5px dashed #E2D5C5;
+      box-shadow: none;
+    }
+    /* Geplant: feiner Terrakotta-Streifen links */
+    .tag:has(select.geplant)::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 20px;
+      bottom: 20px;
+      width: 4px;
+      border-radius: 0 4px 4px 0;
+      background: var(--terrakotta);
+      pointer-events: none;
     }
 
     /* ===== Reiter "Gerichte" ===== */
     .feld {
       display: block;
+      margin-bottom: 22px;
+      font-size: 0.95rem;
       font-weight: 600;
-      margin-bottom: 16px;
     }
-    .feld input { margin-top: 6px; font-weight: normal; }
+    .feld input { margin-top: 8px; font-weight: normal; }
     .feld-titel {
+      margin: 0 0 10px;
+      font-size: 0.95rem;
       font-weight: 600;
-      margin: 0 0 4px;
     }
 
     .zutat-zeile {
       display: grid;
       grid-template-columns: 1fr 1fr 48px;
       gap: 8px;
-      padding: 12px 0;
-      border-top: 1px dashed var(--rand);
+      margin-bottom: 10px;
+      padding: 12px;
+      border: 1px solid var(--linie);
+      border-radius: 14px;
     }
     .zutat-name { grid-column: 1 / 3; }
     .zutat-entfernen { grid-column: 3; }
@@ -183,92 +307,154 @@
       width: 48px;
       height: 48px;
       font: inherit;
-      color: var(--grau);
-      background: #fff;
-      border: 1px solid var(--rand);
-      border-radius: 10px;
+      color: var(--gedaempft);
+      background: transparent;
+      border: none;
+      border-radius: 50%;
       cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .zutat-entfernen:hover {
+      color: var(--terrakotta);
+      background: var(--terrakotta-hell);
     }
 
     .formular-hinweis {
-      color: var(--rot);
+      margin: 14px 0;
+      font-size: 0.95rem;
       font-weight: 600;
-      margin: 12px 0;
+      color: var(--fehler);
     }
-    .formular-hinweis:empty { margin: 8px 0; }
+    .formular-hinweis:empty { margin: 10px 0; }
 
-    #zutat-hinzufuegen { margin-top: 4px; }
+    #zutat-hinzufuegen { margin-top: 6px; }
 
+    /* Liste aller Gerichte: jedes Gericht eine eigene Karte */
+    .gerichte {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .gerichte > li {
+      overflow: hidden;
+      background: var(--karte);
+      border-radius: var(--rundung);
+      box-shadow: var(--schatten);
+    }
     summary {
       display: flex;
       align-items: center;
-      gap: 8px;
-      min-height: 52px;
-      padding: 12px 16px;
-      font-weight: 600;
+      gap: 10px;
+      min-height: 62px;
+      padding: 14px 22px;
+      font-family: var(--schrift-titel);
+      font-size: 1.12rem;
       cursor: pointer;
       list-style: none;
     }
     summary::-webkit-details-marker { display: none; }
+    /* kleiner Terrakotta-Pfeil rechts, dreht sich beim Aufklappen */
     summary::after {
-      content: "▸";
+      content: "";
+      flex-shrink: 0;
+      width: 8px;
+      height: 8px;
       margin-left: auto;
-      color: var(--grau);
-      transition: transform 0.15s;
+      border-right: 2px solid var(--terrakotta);
+      border-bottom: 2px solid var(--terrakotta);
+      transform: rotate(-45deg);
+      transition: transform 0.2s;
     }
-    details[open] summary::after { transform: rotate(90deg); }
+    details[open] summary::after { transform: rotate(45deg); }
 
     .marke {
-      font-size: 0.75rem;
+      padding: 3px 10px;
+      font-family: var(--schrift-text);
+      font-size: 0.72rem;
       font-weight: 600;
-      color: var(--gruen);
-      background: var(--gruen-hell);
-      padding: 2px 8px;
+      letter-spacing: 0.04em;
+      color: var(--salbei);
+      background: var(--salbei-hell);
       border-radius: 999px;
     }
     .zutaten {
       margin: 0;
-      padding: 0 16px 14px 40px;
-      color: var(--grau);
+      padding: 0 22px 18px 44px;
+      font-size: 0.95rem;
+      color: var(--gedaempft);
     }
+    .zutaten li { padding: 2px 0; }
+    .zutaten li::marker { color: var(--terrakotta); }
     details .knopf-gefahr {
-      width: calc(100% - 32px);
-      margin: 0 16px 16px;
+      width: calc(100% - 44px);
+      margin: 2px 22px 22px;
     }
 
-    /* ===== Reiter "Einkauf" ===== */
+    /* ===== Reiter "Einkauf": jeder Bereich eine eigene Karte ===== */
     .fortschritt {
-      color: var(--grau);
-      margin: 16px 4px 0;
+      margin: 18px 4px 4px;
+      font-size: 0.95rem;
+      color: var(--gedaempft);
+    }
+    .bereich-karte {
+      margin-top: 16px;
+      padding: 20px 22px 8px;
+      background: var(--karte);
+      border-radius: var(--rundung);
+      box-shadow: var(--schatten);
     }
     .bereich-titel {
-      font-size: 1rem;
-      color: var(--gruen);
-      margin: 20px 4px 8px;
+      margin: 0 0 4px;
+      font-size: 1.15rem;
+      color: var(--salbei);
     }
+    .eintraege {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .eintraege li + li { border-top: 1px solid var(--linie); }
     .eintrag {
       display: flex;
       align-items: center;
-      gap: 14px;
-      min-height: 52px;
-      padding: 10px 16px;
+      gap: 16px;
+      min-height: 56px;
+      padding: 12px 0;
       cursor: pointer;
     }
+    /* Rundes Häkchen in Terrakotta */
     .eintrag input {
       flex-shrink: 0;
-      width: 24px;
-      height: 24px;
+      width: 26px;
+      height: 26px;
       margin: 0;
-      accent-color: var(--gruen);
+      appearance: none;
+      -webkit-appearance: none;
+      background: transparent center / 14px no-repeat;
+      border: 2px solid var(--terrakotta);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background-color 0.15s;
     }
+    .eintrag input:checked {
+      background-color: var(--terrakotta);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    }
+    .eintrag span { transition: color 0.2s; }
+    /* Abgehakt: sanft ausgegraut */
     .eintrag.erledigt span {
+      color: #B5A89D;
       text-decoration: line-through;
-      color: var(--grau);
+      text-decoration-color: rgba(138, 123, 112, 0.5);
     }
     .leer {
-      padding: 24px 16px;
+      padding: 36px 24px;
+      font-family: var(--schrift-titel);
+      font-style: italic;
       text-align: center;
-      color: var(--grau);
+      color: var(--gedaempft);
     }
 
     /* ===== Reiter-Leiste unten ===== */
@@ -280,47 +466,63 @@
       z-index: 10;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      padding: 0 max(0px, calc((100% - 600px) / 2));
+      padding: 6px max(8px, calc((100% - 600px) / 2)) 8px;
       background: var(--karte);
-      border-top: 1px solid var(--rand);
+      box-shadow: 0 -1px 0 var(--linie), 0 -8px 24px rgba(59, 47, 42, 0.05);
     }
     .reiter-leiste button {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
-      min-height: 64px;
+      gap: 4px;
+      min-height: 60px;
       font: inherit;
-      font-size: 0.85rem;
-      color: var(--grau);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--gedaempft);
       background: none;
       border: none;
+      border-radius: 14px;
       cursor: pointer;
+      transition: color 0.2s;
     }
     .reiter-leiste .symbol {
-      font-size: 1.4rem;
-      line-height: 1;
+      display: grid;
+      place-items: center;
+      width: 56px;
+      height: 30px;
+      border-radius: 15px;
+      transition: background 0.2s;
     }
-    .reiter-leiste button.aktiv {
-      color: var(--gruen);
-      font-weight: 700;
-      box-shadow: inset 0 3px 0 var(--gruen);
+    .reiter-leiste svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
+    .reiter-leiste button.aktiv { color: var(--terrakotta); }
+    .reiter-leiste button.aktiv .symbol { background: var(--terrakotta-hell); }
 
     /* ===== Kurze Meldung (z. B. "Liste kopiert ✓") ===== */
     .meldung {
       position: fixed;
       left: 16px;
       right: 16px;
-      bottom: 84px;
+      bottom: 94px;
       z-index: 20;
       width: fit-content;
       margin: 0 auto;
-      padding: 10px 18px;
-      color: #fff;
-      background: #333;
+      padding: 11px 20px;
+      font-size: 0.95rem;
+      color: var(--hintergrund);
+      background: var(--text);
       border-radius: 999px;
+      box-shadow: 0 8px 24px rgba(59, 47, 42, 0.2);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.2s;
@@ -330,14 +532,15 @@
 </head>
 <body>
   <header class="kopf">
-    <h1 id="titel">Wochenplan</h1>
+    <h1>Wochenplaner</h1>
+    <p id="titel" class="unterzeile">Was kochen wir diese Woche?</p>
   </header>
 
   <main>
     <!-- Reiter 1: Woche -->
     <section id="reiter-woche" class="reiter">
-      <p class="einleitung">Wähle für jeden Tag ein Abendessen.</p>
-      <ul id="wochen-liste" class="liste-karte"></ul>
+      <p class="einleitung">Tippe auf einen Tag, um ein Abendessen zu wählen.</p>
+      <ul id="wochen-liste" class="tage"></ul>
       <button type="button" id="neue-woche" class="knopf knopf-zweitrangig">Neue Woche</button>
     </section>
 
@@ -357,7 +560,7 @@
       </form>
 
       <h2>Alle Gerichte</h2>
-      <ul id="gerichte-liste" class="liste-karte"></ul>
+      <ul id="gerichte-liste" class="gerichte"></ul>
     </section>
 
     <!-- Reiter 3: Einkauf -->
@@ -370,9 +573,25 @@
   <div id="meldung" class="meldung" role="status" aria-live="polite"></div>
 
   <nav class="reiter-leiste">
-    <button type="button" data-reiter="woche"><span class="symbol" aria-hidden="true">📅</span>Woche</button>
-    <button type="button" data-reiter="gerichte"><span class="symbol" aria-hidden="true">🍲</span>Gerichte</button>
-    <button type="button" data-reiter="einkauf"><span class="symbol" aria-hidden="true">🛒</span>Einkauf</button>
+    <!-- Kleine Strich-Symbole (SVG), sie nehmen automatisch die Textfarbe an -->
+    <button type="button" data-reiter="woche">
+      <span class="symbol" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+      </span>
+      Woche
+    </button>
+    <button type="button" data-reiter="gerichte">
+      <span class="symbol" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4.5 11h15v3.5a5.5 5.5 0 0 1-5.5 5.5h-4a5.5 5.5 0 0 1-5.5-5.5V11z"/><path d="M2.5 11h19M9.5 7.5c0-1.2 1-1.5 1-2.8M14 7.5c0-1.2 1-1.5 1-2.8"/></svg>
+      </span>
+      Gerichte
+    </button>
+    <button type="button" data-reiter="einkauf">
+      <span class="symbol" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M3.5 9.5h17l-1.6 8.3a2.5 2.5 0 0 1-2.5 2.2H7.6a2.5 2.5 0 0 1-2.5-2.2L3.5 9.5z"/><path d="M8 9.5l3-5.5M16 9.5l-3-5.5M9.5 13.5v3M14.5 13.5v3"/></svg>
+      </span>
+      Einkauf
+    </button>
   </nav>
 
   <script>
@@ -539,11 +758,11 @@
       },
     ];
 
-    // Überschriften in der Kopfzeile, je nach Reiter.
+    // Unterzeile im Kopfbereich, je nach Reiter.
     const REITER_TITEL = {
-      woche: "Wochenplan",
-      gerichte: "Gerichte",
-      einkauf: "Einkaufsliste",
+      woche: "Was kochen wir diese Woche?",
+      gerichte: "Deine Rezeptsammlung",
+      einkauf: "Alles für den Einkauf",
     };
 
 
@@ -765,7 +984,7 @@
         const auswahl = document.createElement("select");
         auswahl.id = "tag-" + tag.schluessel;
         auswahl.dataset.tag = tag.schluessel;
-        auswahl.append(neueOption("", "– nichts geplant –"));
+        auswahl.append(neueOption("", "Noch nichts geplant"));
         for (const gericht of gerichte) {
           auswahl.append(neueOption(gericht.id, gericht.name));
         }
@@ -841,12 +1060,16 @@
       let erledigt = 0;
 
       for (const gruppe of gruppen) {
+        // Jeder Bereich bekommt eine eigene Karte: Überschrift + Einträge
+        const karte = document.createElement("section");
+        karte.className = "bereich-karte";
+
         const ueberschrift = document.createElement("h2");
         ueberschrift.className = "bereich-titel";
         ueberschrift.textContent = gruppe.bereich;
 
         const liste = document.createElement("ul");
-        liste.className = "liste-karte";
+        liste.className = "eintraege";
 
         for (const eintrag of gruppe.eintraege) {
           const istErledigt = haekchen.has(eintrag.schluessel);
@@ -870,7 +1093,8 @@
           liste.append(punkt);
         }
 
-        bereich.append(ueberschrift, liste);
+        karte.append(ueberschrift, liste);
+        bereich.append(karte);
       }
 
       const fortschritt = document.createElement("p");

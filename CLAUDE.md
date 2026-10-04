@@ -18,6 +18,25 @@ Ein Wochen-Essensplaner fürs Handy, komplett auf Deutsch. Man wählt für jeden
 - **Nutzereingaben nur mit `textContent` anzeigen**, nie über `innerHTML`.
 - Supermarkt-Bereiche und Einheiten sind **nur an einer Stelle** im Code definiert (Konstanten `BEREICHE` und `EINHEITEN`).
 
+## Design
+
+Stimmung: warm und gemütlich, wie ein schönes Kochbuch. **Immer helles Design, kein Dark Mode.** Alle Farben stehen als Variablen in `:root` am Anfang des `<style>`-Blocks. Neue Elemente sollen diese Variablen nutzen statt eigener Farbwerte.
+
+| Rolle | Farbe | Variable |
+|---|---|---|
+| Hintergrund (warmes Creme) | `#FAF6EF` | `--hintergrund` |
+| Karten (fast Weiß, sehr weicher Schatten) | `#FFFDF9` | `--karte`, `--schatten` |
+| Hauptfarbe Terrakotta: Buttons, aktiver Reiter, Häkchen | `#C2603F` | `--terrakotta` |
+| Zweitfarbe Salbeigrün: Überschriften der Supermarkt-Bereiche | `#7A8F6E` | `--salbei` |
+| Text (dunkles Warmbraun) | `#3B2F2A` | `--text` |
+| Nebentext (gedämpft) | `#8A7B70` | `--gedaempft` |
+
+- **Formen:** Ecken ca. 16 px rund (`--rundung`), viel Luft zwischen Elementen, Karten statt Rahmen-Listen.
+- **Schrift:** Überschriften und Gerichtsnamen in Georgia (`--schrift-titel`), sonst Systemschrift (`--schrift-text`). Keine externen Schriften.
+- **Woche:** Jeder Tag ist eine eigene Karte, oben klein der Wochentag, darunter groß das Gericht. Ungeplante Tage haben einen gestrichelten Rahmen und gedämpfte Schrift.
+- **Einkauf:** Jeder Bereich ist eine eigene Karte mit Salbei-Überschrift. Die Häkchen sind rund und in Terrakotta, abgehakte Einträge sanft ausgegraut.
+- **Reiter unten:** ruhige Strich-Symbole (SVG), der aktive Reiter ist in Terrakotta.
+
 ### Supermarkt-Bereiche (feste Reihenfolge)
 
 Obst & Gemüse · Kühlregal · Brot & Backwaren · Trockenware & Konserven · Gewürze & Öle · Tiefkühl · Sonstiges
